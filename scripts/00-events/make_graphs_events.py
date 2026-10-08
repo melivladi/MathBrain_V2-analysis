@@ -7,7 +7,6 @@
 
 #Run on the server like this: "python xpd_to_tsv_loca.py -s 3"
 
-
 # %%
 # Imports
 
@@ -25,7 +24,7 @@ from nilearn.plotting import plot_design_matrix
 
 SUBJ_ID = 201
 
-DATA_PATH = f"/neurospin/unicog/protocols/MathBrain_Dehaene_2024/Data/MathBrain_7T_V2/Participants/derivatives/sub-{SUBJ_ID:02}/func"
+DATA_PATH = f"/data/derivatives/fmriprep/sub-{SUBJ_ID:02}/func"
 
 EVENTS_PATH = "/neurospin/unicog/protocols/Daniela_MathBrain_V2_fmri/Results/pilot_graphs/events"
                 
