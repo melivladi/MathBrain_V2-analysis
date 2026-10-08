@@ -1,0 +1,23 @@
+# Python environment
+.venv/
+__pycache__/
+*.py[cod]
+.ipynb_checkpoints/
+
+# macOS
+.DS_Store
+
+# MRI / participant data
+/rawdata/
+/derivatives/
+
+# Extra safety: neuroimaging files
+*.nii
+*.nii.gz
+*.mgz
+*.mgh
+*.gii
+
+# Temporary files
+*.tmp
+*.log
