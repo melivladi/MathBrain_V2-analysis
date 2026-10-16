@@ -21,3 +21,7 @@ __pycache__/
 # Temporary files
 *.tmp
 *.log
+/results/
+/rawdata/
+/derivatives/
+/sourcedata/

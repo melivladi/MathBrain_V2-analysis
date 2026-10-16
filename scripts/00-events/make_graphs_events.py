@@ -1,91 +1,86 @@
 #! /usr/bin/env python
 # coding: UTF-8
 
+"""
+Convert Expyriment recordings (.xpd) into an events.tsv file
+for first-level fMRI analysis.
 
-##This code was provided by Thomas and checks the different events, creating a tsv file
-# However, it does not have the differences between left and right button presses
+The resulting table contains:
+- Sentence events: graph and biology conditions
+- Button events: True (V) and False (F) responses
 
-#Run on the server like this: "python xpd_to_tsv_loca.py -s 3"
+Timing is expressed in seconds relative to the experiment clock.
+
+NOTE: Sentence events currently include the 350 ms red cue.
+"""
 
 # %%
 # Imports
 
 import os
 import nilearn
-import sys
-import optparse
 import pandas as pd
-import numpy as np
 import matplotlib.pyplot as plt
 from nilearn.plotting import plot_design_matrix
 
 
 #%%
+# Define subject and file paths
 
 SUBJ_ID = 201
 
-DATA_PATH = f"/data/derivatives/fmriprep/sub-{SUBJ_ID:02}/func"
+# Absolute project path
+PROJECT_ROOT = "/data/mvladisauskas/MathBrain_V2"
 
-EVENTS_PATH = "/neurospin/unicog/protocols/Daniela_MathBrain_V2_fmri/Results/pilot_graphs/events"
-                
-onsetfile = f"/neurospin/unicog/protocols/MathBrain_Dehaene_2024/Data/MathBrain_7T_V2/output_files_mathbrainbig40_v2/sub{SUBJ_ID:02}/Graphs/sub201/VectorOffset_localizer_sub{SUBJ_ID:02}.xpd"
+# Where the generated events.tsv will be saved
+EVENTS_PATH = f"{PROJECT_ROOT}/results/00-events"
+
+# Original Expyriment file containing trial timings
+onsetfile = (f"{PROJECT_ROOT}/sourcedata/sub-{SUBJ_ID:02}/"
+            f"VectorOffset_localizer_sub{SUBJ_ID:02}.xpd")
 
 # Debug print to check paths
-print(f"DATA_PATH: {DATA_PATH}")
 print(f"onsetfile: {onsetfile}")
 
-
 # Check if the file exists
-# Debug print to check paths
-
 if not os.path.exists(onsetfile):
     raise FileNotFoundError(f"The file {onsetfile} does not exist.")
 
-
 #%%
-TRIAL_TYPE = {
-    '01-math': '01-math',
-    '02-bio': '02-bio'
-}
+# Load experimental recordings
 
-
+# The .xpd file contains trial information and response records (also comments with #)
 events_df = pd.read_csv(onsetfile, comment = '#')
 
-# Duration
+# Compute the duration of each recorded event in ms (including cue)
 events_df['duration'] = events_df['end_time'] - events_df['start_time']
 
-# Retrieve pressed button
+# Convert recorded events into GLM-compatible events
 allEvents = []
 for t in events_df.itertuples():
+    # There are three possible events: response, sentence presentation, and end of the experiment
     if t.cond == 'keypressed':
-        # to divide the ms into seconds
+        # Responses, keep 'sentence' (V or F) and timing in seconds
         allEvents.append([t.start_time/1000, t.duration/1000, f"button_{t.sentence}"])
-    elif t.cond == 'endstim': # excludes last event
+    elif t.cond == 'endstim':
+        # Ignore the special marker at the end of the experiment 
         continue
     else:
+        # Sentence presentation, keep timing in seconds and condition
         allEvents.append([t.start_time/1000, t.duration/1000, t.cond])
 
+# Final events table
+## Each row is one event, described by:
+## onset--> time at which it starts, in seconds
+## duration--> length of the event, in seconds
+## trial_type--> experimental condition or response category
 events_df = pd.DataFrame(allEvents, columns=['onset', 'duration', 'trial_type'])
-
-# events_df_prt = events_df[['start_time', 'end_time', 'duration', 'cond']]
-
-# events_df = events_df[['start_time', 'duration', 'cond']]
-
-# to have the typical file structure
-
-# events_df.rename(columns = {'start_time': 'onset', 
-#                             'cond': 'trial_type'}, inplace=True)
-
-
-# %%
-# events_df.to_csv(os.path.join(DATA_PATH, f"sub-{SUBJ_ID:02d}_mathlang_events.csv"), index=False)
-
 
 # %%
 # Write CSV as events tsv
-events_df.to_csv(f"{EVENTS_PATH}/sub{SUBJ_ID:02}_graphs_events.tsv", index=False)
+events_df.to_csv(f"{EVENTS_PATH}/sub{SUBJ_ID:02}_graphs_events.tsv", sep="\t", index=False)
 
-## plot to check quality
+# Visualize event timing to check quality
 nilearn.plotting.plot_event(events_df, figsize=(15, 5))
 plt.show()
 
